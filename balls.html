@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="css/reset.css">
+	<style type="text/css">
+	body{
+		text-align: center;
+	}
+	canvas{
+		margin:0 auto;
+		border:1px solid #ccc;
+	}
+	</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+</body>
+<script type="text/javascript">
+	var canvas=document.getElementById("canvas");
+	var context=canvas.getContext("2d");
+	canvas.width=600;
+	canvas.height=400;
+
+	window.onload=function(){
+		document.onmousemove=function(){
+			var x=event.clientX-canvas.getBoundingClientRect().left;
+			var y=event.clientY-canvas.getBoundingClientRect().top;
+
+			initBalls(x,y);
+		}
+		window.setInterval(drawBalls,40);
+	}
+	var colors=["green","yellow","red","blue","orange"];
+	var balls=[];
+	var g=1;
+	function initBalls(x,y){
+		for(var i=0;i<1;i++){
+			var r=parseInt(Math.random()*5)+3;
+			var color=colors[parseInt(Math.random()*5)];
+			var vx=parseInt(Math.random()*10)-5;
+			if(vx==0){
+				vx=-2;
+			}
+			var vy=parseInt(Math.random()*10)*-1;
+			balls.push({"x":x+(Math.random()*10-5)*10,"y":y+(Math.random()*10-5)*10,"color":color,"r":r,"vx":vx,"vy":vy,"g":1,"f":1-r*0.1})
+		}
+	}
+
+	function drawBalls(){
+		context.clearRect(0,0,canvas.width,canvas.height);
+		for(var i=0;i<balls.length;i++){
+			balls[i].x=balls[i].vx+balls[i].x;
+			balls[i].vy=balls[i].vy+balls[i].g;
+			balls[i].y=balls[i].vy+balls[i].y;
+			if(balls[i].y>=canvas.height-balls[i].r){
+				balls[i].y=canvas.height-balls[i].r;
+					balls[i].vy=-balls[i].vy*balls[i].f;
+			}
+			
+			drawBall(balls[i]);
+		}
+		var cnt=0;
+		for(var i=0;i<balls.length;i++){
+			if(balls[i].x+balls[i].r>0 && balls[i].x-balls[i].r<canvas.width){
+				{
+				balls[cnt++]=balls[i];}
+			}
+		}
+		balls.length=cnt;
+	}
+	function drawBall(ball){
+		context.beginPath();
+
+		context.fillStyle=ball.color;
+		context.arc(ball.x,ball.y,ball.r,0,2*Math.PI);
+
+		context.fill();
+
+		context.closePath();
+	}
+</script>
+</html>

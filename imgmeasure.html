@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="css/reset.css">
+	<style type="text/css">
+	body{
+		text-align: center;
+	}
+	canvas{
+		margin:0 auto;
+		border:1px solid #ccc;
+	}
+	</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<button type="button" onclick="loadimg()">加载图片</button>
+</body>
+<script type="text/javascript">
+	var canvas=document.getElementById("canvas");
+	var context=canvas.getContext("2d");
+	canvas.width=600;
+	canvas.height=400;
+	var img=new Image();
+
+	function loadimg(){
+		context.drawImage(img,0,0,canvas.width,canvas.height);
+	}
+	window.onload=function(){
+		img.src="img/1.jpg";
+		var x0,x1;
+		var y0,y1;
+		var down=false;
+		canvas.onmousedown=function(){
+			 x0=event.clientX-canvas.getBoundingClientRect().left;
+			 y0=event.clientY-canvas.getBoundingClientRect().top;
+			 context.beginPath();
+			 context.moveTo(x0,y0);
+			down=true;
+		}
+		canvas.onmousemove=function(){
+			if(down){
+				x1=event.clientX-canvas.getBoundingClientRect().left;
+			 	y1=event.clientY-canvas.getBoundingClientRect().top;
+			 	context.lineTo(x1,y1);
+				context.stroke();
+			}
+		}
+		canvas.onmouseup=function(){
+			if(down){
+
+			down=false;
+			}
+		}
+	}
+</script>
+</html>

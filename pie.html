@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <style type="text/css">
+    body {
+        text-align: center;
+    }
+    
+    canvas {
+        margin: 0 auto;
+        border: 1px solid #ccc;
+    }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+<script type="text/javascript">
+var canvas = document.getElementById("canvas");
+var context = canvas.getContext("2d");
+canvas.width = 600;
+canvas.height = 400;
+
+var options = {
+    "text": {
+        "color": "gray"
+    },
+    "radius": 0.2,
+    "hoverradius": 0.28,
+    "colors": ["#807fd1", "#97d17f", "#eacf71", "#f64d4d"],
+    "datas": [{
+        "title": "搜索引擎",
+        "value": 300
+    },
+    {
+        "title": "直接访问",
+        "value": 100
+    }
+    ]
+    // "datas": [{
+    //     "title": "搜索引擎",
+    //     "value": 300
+    // }, {
+    //     "title": "直接访问",
+    //     "value": 100
+    // }, {
+    //     "title": "批量访问",
+    //     "value": 220
+    // }, {
+    //     "title": "翻页",
+    //     "value": 120
+    // }]
+}
+window.onload = function() {
+    draw();
+}
+
+function draw() {
+    var count = 0;
+    options.datas.forEach(function(ele, index) {
+        count = count + ele.value;
+    })
+    options.datas.map(function(ele, index) {
+        ele.value = ele.value * 2 * Math.PI / count;
+        if (index == 0) {
+            ele.startAngle = 0;
+            ele.textAngle = 2 * Math.PI - ele.value / 2;
+            ele.x = options.radius * canvas.width * Math.cos(ele.textAngle) + canvas.width / 2;
+            ele.y = -options.radius * canvas.width * Math.sin(ele.textAngle) + canvas.height / 2;
+            ele.x0 = options.radius * canvas.width * Math.cos(ele.startAngle) + canvas.width / 2;
+            ele.y0 = -options.radius * canvas.width * Math.sin(ele.startAngle) + canvas.height / 2;
+            ele.endAngle = ele.value;
+        } else {
+            ele.startAngle = options.datas[index - 1].endAngle;
+            ele.textAngle = ele.startAngle + ele.value / 2;
+            ele.x = options.radius * canvas.width * Math.cos(ele.textAngle) + canvas.width / 2;
+            ele.y = options.radius * canvas.width * Math.sin(ele.textAngle) + canvas.height / 2;
+            ele.endAngle = ele.startAngle + ele.value;
+        }
+        var colorindex = parseInt(index % (options.colors.length));
+        ele.color = options.colors[colorindex];
+    })
+    canvas.onmousemove = function() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        var x = event.clientX - canvas.getBoundingClientRect().left;
+        var y = event.clientY - canvas.getBoundingClientRect().top;
+        options.datas.forEach(function(ele, index) {
+            drawArc(ele, x, y);
+            drawTitle(ele);
+            // drawHover(ele);
+        })
+    }
+
+}
+
+
+function drawArc(ele, x, y) {
+    context.strokeStyle = ele.color;
+    context.beginPath();
+    context.arc(canvas.width / 2, canvas.height / 2, options.radius * canvas.width, ele.startAngle, ele.endAngle, false);
+    context.lineTo(canvas.width / 2, canvas.height / 2);
+    context.lineTo(ele.x0, ele.y0);
+    // context.fill();
+    context.stroke();
+    context.closePath();
+    if (context.isPointInPath(x, y)) {
+        var i = 1;
+        var interval = window.setInterval(function() {
+        	context.clearRect(0, 0, canvas.width, canvas.height);
+            context.strokeStyle = ele.color;
+            context.beginPath();
+            context.arc(canvas.width / 2, canvas.height / 2, ((options.hoverradius - options.radius) * i / 20 + options.radius) * canvas.width, ele.startAngle, ele.endAngle, false);
+            context.lineTo(canvas.width / 2, canvas.height / 2);
+            var x0 = ((options.hoverradius - options.radius) * i / 20 + options.radius) * canvas.width * Math.cos(ele.startAngle) + canvas.width / 2;
+            var y0 = -((options.hoverradius - options.radius) * i / 20 + options.radius) * canvas.width * Math.sin(ele.startAngle) + canvas.height / 2;
+            context.lineTo(ele.x0, ele.y0);
+            // context.fill();
+            context.stroke();
+            context.closePath();
+            if (i <= 20) {
+                i++;
+            }
+        }, 50);
+    } 
+}
+
+function hoverArc(ele, i) {
+    // context.clearRect(0,0,canvas.width,canvas.height);
+    context.beginPath();
+    context.arc(canvas.width / 2, canvas.height / 2, ((options.hoverradius - options.radius) * i / 20 + options.radius) * canvas.width, ele.startAngle, ele.endAngle, false);
+    context.lineTo(canvas.width / 2, canvas.height / 2);
+    context.fill();
+    context.closePath();
+
+}
+
+function drawTitle(ele) {
+    context.fillStyle = options.text.color;
+    var length = context.measureText(ele.title + ele.value).width;
+    var x;
+    if (ele.x <= canvas.width / 2) {
+        x = ele.x - length - 10;
+    } else {
+        x = ele.x + 10;
+    }
+    context.fillText(ele.title + ele.value, x, ele.y)
+}
+</script>
+
+</html>

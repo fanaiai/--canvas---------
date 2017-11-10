@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="css/reset.css">
+	<style type="text/css">
+	body{
+		text-align: center;
+		cursor: default;
+	}
+	canvas{
+		margin:0 auto;
+		border:1px solid #ccc;
+	}
+	</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<canvas id="canvasb"></canvas>
+</body>
+<script type="text/javascript">
+	var canvas=document.getElementById("canvas");
+	var context=canvas.getContext("2d");
+	canvas.width=600;
+	canvas.height=400;
+
+	var canvasb=document.getElementById("canvasb");
+	var contextb=canvasb.getContext("2d");
+	canvasb.width=600;
+	canvasb.height=400;
+
+	var down=false;
+	var image=new Image();
+
+	var colorData=contextb.createImageData(canvasb.width,canvasb.height);
+	window.onload=function(){
+		var imageData={};
+		image.src="img/2.jpg";
+		image.onload=function(){
+ 			context.drawImage(image,0,0,canvas.width,canvas.height);
+			imageData=context.getImageData(0,0,canvas.width,canvas.height);
+		}
+		document.onmousedown=function(){
+			down=true;
+		}
+		document.onmouseup=function(){
+			down=false;
+		}
+		document.onmousemove=function(){
+			if(down){
+				var x=event.clientX-canvas.getBoundingClientRect().left;
+				var y=event.clientY-canvas.getBoundingClientRect().top;
+				var point=(parseInt(y)*canvas.width+parseInt(x))*4;
+				var r=imageData.data[point+0];
+				var g=imageData.data[point+1];
+				var b=imageData.data[point+2];
+				var a=imageData.data[point+3];
+				
+				for(var i=0;i<canvasb.width*canvasb.height;i++){
+					colorData.data[i*4+0]=r;
+					colorData.data[i*4+1]=g;
+					colorData.data[i*4+2]=b;
+					colorData.data[i*4+3]=a;
+				}
+
+
+				contextb.putImageData(colorData,0,0,0,0,canvasb.width,canvasb.height);
+			}
+		}
+	}
+	var arrays=[{"children":[{"children":[{"children":[],"delete":true,"halfCheck":false,"id":173429,"isParent":false,"name":"yz2","open":true,"pid":0,"save":true,"top":false,"isLast":false,"icon":"\/img\/classification.png","tag":"yztest2","tag_type":0}],"delete":true,"halfCheck":false,"id":173427,"isParent":true,"name":"yz","open":true,"pid":0,"save":true,"top":false,"isLast":false,"icon":"\/img\/classification.png","tag":"yztest","tag_type":0},{"children":[],"delete":true,"halfCheck":false,"id":173430,"isParent":false,"name":"123","open":true,"pid":0,"save":true,"top":false,"isLast":false,"icon":"\/img\/classification.png","tag":"12","tag_type":0}],"delete":true,"halfCheck":false,"id":44,"isParent":true,"name":"test1","open":true,"pid":0,"save":true,"top":false,"isLast":false,"icon":"\/img\/classification.png","tag":"test1","tag_type":0},{"children":[],"delete":true,"halfCheck":false,"id":45,"isParent":false,"name":"test2","open":true,"pid":0,"save":true,"top":false,"isLast":false,"icon":"\/img\/classification.png","tag":"test2","tag_type":0},{"children":[{"children":[],"delete":true,"halfCheck":false,"id":173428,"isParent":false,"name":"yz-1","open":true,"pid":0,"save":true,"top":false,"isLast":false,"icon":"\/img\/classification.png","tag":"yztest1","tag_type":0}],"delete":true,"halfCheck":false,"id":46,"isParent":true,"name":"test3","open":true,"pid":0,"save":true,"top":false,"isLast":false,"icon":"\/img\/classification.png","tag":"test3","tag_type":0},{"children":[],"delete":true,"halfCheck":false,"id":50,"isParent":false,"name":"analysis","open":true,"pid":0,"save":true,"top":false,"isLast":false,"icon":"\/img\/classification.png","tag":"analysis","tag_type":0}]
+;
+	function hasChild(obj){
+		if(obj.children.length>0 || obj.children!=undefined){
+			if(obj.isParent){
+				obj.noCheck=true;
+			}
+			else{
+				obj.noCheck=false;
+			}
+			checkarrys(obj.children);
+		}
+	}
+
+	function checkarrys(array){
+		for(var i=0;i<array.length;i++){
+			hasChild(array[i]);
+		}
+	}
+
+	checkarrys(arrays);
+	console.log(arrays);
+
+</script>
+</html>

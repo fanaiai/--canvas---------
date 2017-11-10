@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <style type="text/css">
+    body {
+        text-align: center;
+    }
+    
+    canvas {
+        margin: 0 auto;
+        border: 1px solid #ccc;
+    }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+<script type="text/javascript">
+var canvas = document.getElementById("canvas");
+var context = canvas.getContext("2d");
+canvas.width = 600;
+canvas.height = 400;
+var num = 1;
+var tangles = [];
+window.onload = function() {
+    context.lineWidth = 2;
+    context.fillStyle = "#3f6ad5";
+    context.strokeStyle = "#3e4";
+    initTangle(num);
+    draw();
+    window.setInterval(update, 50);
+}
+
+function initTangle(num) {
+    for (var i = 0; i < num; i++) {
+        // var pointnum=parseInt(Math.random()*2)+3;
+        var pointnum = 3;
+        var x = Math.random() * canvas.width;
+        var y = Math.random() * canvas.height;
+
+        tangles.push({
+            "pointnum": pointnum,
+            "x": x,
+            "y": y,
+            "points": []
+        })
+    }
+    for (var j = 0; j < num; j++) {
+        for (var t = 0; t < tangles[j].pointnum; t++) {
+            tangles[j].points.push({
+                "x": tangles[j].x + Math.random() * 120 - 60,
+                "y": tangles[j].y + Math.random() * 120 - 60,
+                "vx": Math.random() * 4 - 2,
+                "vy": Math.random() * 4 - 2
+            })
+        }
+    }
+    for (var jj = 0; jj < num; jj++) {
+        for (var tt = 0; tt < tangles[jj].pointnum; tt++) {
+            var nn = (tt - 1) >= 0 ? (tt - 1) : (tangles[jj].pointnum - 1);
+            var l = Math.sqrt(Math.abs((tangles[jj].points[tt].x - tangles[jj].points[nn].x) * (tangles[jj].points[tt].x - tangles[jj].points[nn].x)) + Math.abs((tangles[jj].points[tt].y - tangles[jj].points[nn].y) * (tangles[jj].points[tt].y - tangles[jj].points[nn].y)));
+            tangles[jj].points[tt].len = l;
+        }
+    }
+    console.log(tangles)
+}
+
+function draw() {
+    for (var i = 0; i < tangles.length; i++) {
+        drawOne(tangles[i]);
+    }
+}
+
+function update() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    for (var j = 0; j < num; j++) {
+    	var x=tangles[j].x;
+    	var y=tangles[j].y;
+        for (var t = 0; t < tangles[j].pointnum; t++) {
+            var n = (t - 1) >= 0 ? (t - 1) : (tangles[j].pointnum - 1);
+            tangles[j].points[t].x = tangles[j].points[t].x + tangles[j].points[t].vx;
+            tangles[j].points[t].y = tangles[j].points[t].y + tangles[j].points[t].vy;
+
+            var len = Math.sqrt(Math.abs((tangles[j].points[t].x - tangles[j].points[n].x) * (tangles[j].points[t].x - tangles[j].points[n].x)) + Math.abs((tangles[j].points[t].y - tangles[j].points[n].y) * (tangles[j].points[t].y - tangles[j].points[n].y)));
+            if (len >= 60 && len > tangles[j].points[t].len) {
+                tangles[j].points[t].vx = -tangles[j].points[t].vx;
+                tangles[j].points[t].vy = -tangles[j].points[t].vy;
+            }
+            tangles[j].points[t].len=len;
+            x=tangles[j].points[t].x+x;
+            y=tangles[j].points[t].y+y;
+            // console.log(len)
+        }
+        tangles[j].x=x;
+        tangles[j].y=y;
+        drawOne(tangles[j]);
+    }
+}
+
+function drawOne(tangle) {
+    context.beginPath();
+    for (var j = 0; j < tangle.points.length; j++) {
+        context.lineTo(tangle.points[j].x, tangle.points[j].y);
+    }
+    context.closePath();
+    context.stroke();
+    for (var t = 0; t < tangle.points.length; t++) {
+        context.beginPath()
+        context.arc(tangle.points[t].x, tangle.points[t].y, 5, 0, 2 * Math.PI);
+        context.fill();
+    }
+}
+</script>
+
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="css/reset.css">
+	<style type="text/css">
+	body{
+		text-align: center;
+	}
+	canvas{
+		margin:0 auto;
+		border:1px solid #ccc;
+	}
+	</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div style="width:200px;float:left;background: #ccc;height:400px;overflow:hidden;" class="leftBrand">
+	<select class="s">
+		<option>124</option>
+		<option>sfd</option>
+		<option>1cxvxv24</option>
+		<option>1234234324</option>
+		<option>1fhfg24</option>
+		<option>1111</option>
+	</select>
+	<ul>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+		<li>123</li>
+	</ul>
+</div>
+</body>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	var canvas=document.getElementById("canvas");
+	var context=canvas.getContext("2d");
+	canvas.width=600;
+	canvas.height=400;
+
+	window.onload=function(){}
+	var onoption=false;
+	$(document).click(function(e){
+		if($(e.target).hasClass("s")){
+			onoption=!onoption;}
+		else{
+			onoption=false;
+		}
+	})
+	$(document).mouseover(function(e){
+		console.log(onoption)
+    	e.preventDefault();
+    	if(($(e.target).hasClass("leftBrand") || $(e.target).parents().hasClass("leftBrand"))){
+    		$(".leftBrand").css('overflow-y','auto');
+    	}
+    	else if(!onoption){
+    		$(".leftBrand").css('overflow-y','hidden');
+    	}
+      
+    })
+</script>
+</html>

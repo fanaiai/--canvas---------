@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="css/reset.css">
+	<style type="text/css">
+	body{
+		text-align: center;
+	}
+	canvas{
+		margin:0 auto;
+		border:1px solid #ccc;
+	}
+	</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+</body>
+<script type="text/javascript">
+	var canvas=document.getElementById("canvas");
+	var context=canvas.getContext("2d");
+	canvas.width=600;
+	canvas.height=400;
+
+	window.onload=function(){
+		drawText("CANVAS 中文字符")
+	}
+
+	function drawText(s){
+		context.font="bold 40px 微软雅黑";
+		context.fillStyle="red";
+		context.lineWidth=2;
+		context.strokeStyle="blue";
+		context.fillText(s,100,100)
+		context.strokeText(s,100,100)
+	}
+</script>
+</html>

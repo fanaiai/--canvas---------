@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="css/reset.css">
+	<style type="text/css">
+	body{
+		text-align: center;
+	}
+	canvas{
+		margin:0 auto;
+		border:1px solid #ccc;
+	}
+	</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+</body>
+<script type="text/javascript">
+	var canvas=document.getElementById("canvas");
+	var context=canvas.getContext("2d");
+	canvas.width=600;
+	canvas.height=400;
+	context.strokeStyle="red";
+	var cols=10;
+	var rows=10;
+	var xl=canvas.width/(2*rows);
+	var yl=canvas.height/(2*cols);
+	var circles=[];
+	var oldcircle={};
+	function inposition(x,y){
+		for(var i=0;i<circles.length;i++){
+			if(Math.abs(circles[i].x-x)<xl && Math.abs(circles[i].y-y)<yl){
+				context.fillStyle="rgba(0,122,222,0.1)";
+				context.beginPath();
+				context.arc(circles[i].x,circles[i].y,15,0,2*Math.PI);
+				context.fill();
+				context.closePath();
+			}
+		}
+	}
+	function update(){
+		context.clearRect(0,0,canvas.width,canvas.height);
+		draw();
+	}
+	function draw(){
+		context.beginPath();
+		for(var i=0;i<=cols;i++){
+			for(var j=0;j<=rows;j++){
+				circles.push({"x":canvas.width*j/rows,"y":canvas.height*i/cols})
+				if(j==0){
+				context.moveTo(canvas.width*j/rows,canvas.height*i/cols)
+				}
+				else{
+				context.lineTo(canvas.width*j/rows,canvas.height*i/cols)}
+			}
+		}
+		context.stroke();
+		context.beginPath();
+		for(var j1=0;j1<=rows;j1++){
+			for(var i1=0;i1<=cols;i1++){
+				if(i1==0){
+				context.moveTo(canvas.width*j1/rows,canvas.height*i1/cols)
+				}
+				else{
+				context.lineTo(canvas.width*j1/rows,canvas.height*i1/cols)}
+			}
+		}
+		context.stroke();
+	}
+	window.onload=function(){
+		draw();
+		canvas.onmousemove=function(){
+			var x=event.clientX;
+			var y=event.clientY;
+			var offsetcx=canvas.getBoundingClientRect().left;
+			var offsetcy=canvas.getBoundingClientRect().top;
+			var cx=x-offsetcx;
+			var cy=y-offsetcy;
+			update();
+			inposition(cx,cy);
+		}
+	}
+</script>
+</html>

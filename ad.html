@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+</head>
+
+<body>
+    <div>
+        <script type="text/javascript" src="js/jquery.js"></script>
+        <script type="text/javascript">
+        var json = {
+            "material_type": "word", //物料类型为文字
+            "material_name": "", //物料名称
+            "content": "我就是个广告", //物料类型为文字的文字描述
+            "link": "http://www.baidu.com", //点击链接
+            "hover": "悬停文字" //悬停文字
+        };
+        var json2 = {
+            "material_type": "image", //物料类型为图片
+            "material_name": "", //物料名称
+            "height": "200", //图片的高度
+            "width": "200", //图片的宽度
+            "url": "img/1.jpg", //图片的地址
+            "link": "http://baidu.com", //点击图片的连接
+            "description": "百度百度"
+        }
+
+        var id = "_" + Math.random().toString(36).slice(2);
+        var c = "<div id=" + id + "></div>";
+        document.write(c);
+
+        var postData = {
+            "id": 1111,
+            "width": 300,
+            "height": 300,
+            "browser": "",
+            "domain": ""
+        }
+
+        function getAd(postData) {
+            $.ajax({
+                type: "POST",
+                url: "some.php",
+                data: postData,
+                success: function(msg) {
+                    alert("Data Saved: " + msg);
+                },
+                error: function(){
+                	
+                }
+            })
+        }
+
+        function rendHtml(json) {
+            if (json.material_type == "word") {
+                var html = "<a href='" + json.link + "' title='" + json.hover + "'>" + json.content + "</a>";
+            } else if (json.material_type == "image") {
+                var html = "<a href='" + json.link + "' title='" + json.description + "'>" +
+                    "<img src='" + json.url + "' width='" + json.width + "' height='" + json.height + "'/>" +
+                    "<p>" + json.description + "</p>" +
+                    "</a>";
+            }
+            $("#" + id).append(html);
+        }
+        rendHtml(json);
+        </script>
+    </div>
+</body>
+
+</html>

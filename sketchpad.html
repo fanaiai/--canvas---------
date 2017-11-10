@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="css/reset.css">
+	<style type="text/css">
+	body{
+		text-align: center;
+	}
+	canvas{
+		margin:0 auto;
+		border:1px solid #ccc;
+	}
+	</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+</body>
+<script type="text/javascript">
+	var canvas=document.getElementById("canvas");
+	var context=canvas.getContext("2d");
+	canvas.width=600;
+	canvas.height=400;
+
+	color="blue";
+	context.lineWidth=2;
+	context.strokeStyle=color;
+
+	var bx;
+	var by;
+	var down=false;
+	window.onload=function(){
+		document.onmousedown=function(){
+			down=true;
+			context.beginPath();
+			bx=event.clientX-canvas.getBoundingClientRect().left;
+			by=event.clientY-canvas.getBoundingClientRect().top;
+			context.moveTo(bx,by);
+		}
+		document.onmouseup=function(){
+			down=false;
+		}
+		document.onmousemove=function(){
+			if(down){
+				var x=event.clientX-canvas.getBoundingClientRect().left;
+				var y=event.clientY-canvas.getBoundingClientRect().top;
+				context.lineTo(x,y);
+				context.stroke();
+			}
+		}
+	}
+</script>
+</html>

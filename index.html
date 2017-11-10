@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <style type="text/css">
+        body{
+            text-align: center;
+        }
+        canvas{
+            border:1px solid #ccc;
+            margin:40px auto;
+
+        }
+    </style>
+    <script type="text/javascript" src="js/jquery.js"></script>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<canvas id="canvasb"></canvas>
+<button type="button" onclick="filter()">filter</button>
+<button type="button" onclick="createimg()">createimg</button>
+</body>
+<script type="text/javascript">
+    var canvas=document.getElementById("canvas");
+    var context=canvas.getContext("2d");
+    var canvasb=document.getElementById("canvasb");
+    var contextb=canvasb.getContext("2d");
+    canvas.width=300;
+    canvas.height=200;
+    canvasb.width=600;
+    canvasb.height=400;
+
+    var image=new Image();
+
+    window.onload=function(){
+        image.src="img/1.jpg";
+        image.onload=function(){
+            context.drawImage(image,0,0,canvas.width,canvas.height);
+        }
+    }
+    function filter(){
+        var imageData=context.createImageData(canvasb.width,canvasb.height);
+        var imageDataTemp=context.getImageData(0,0,canvas.width,canvas.height);
+        // console.log(imageData);
+        for(var j=0;j<canvasb.width;j++)
+        {   
+            for(var i=0;i<canvasb.height;i++){
+                var p=i*canvasb.width+j;
+                var p0=parseInt(i*canvas.width/canvasb.width)*canvas.width+parseInt(j*canvas.height/canvasb.height);
+                imageData.data[p*4+0]=imageDataTemp.data[p0*4+0];
+                imageData.data[p*4+1]=imageDataTemp.data[p0*4+1];
+                imageData.data[p*4+2]=imageDataTemp.data[p0*4+2];
+                imageData.data[p*4+3]=imageDataTemp.data[p0*4+3];
+        }}
+        console.log(imageData)
+        contextb.putImageData(imageData,0,0,0,0,canvasb.width,canvasb.height);
+    }
+    function createimg(){
+        var imgData=context.createImageData(2,2);
+        var imgDatab=contextb.createImageData(canvasb.width,canvasb.height);
+        for(var j=0;j<2;j++){
+            for(var i=0;i<2;i++){
+                imgData.data[(i*2+j)*4+0]=(i==1)?255:0;
+                imgData.data[(i*2+j)*4+1]=(j==1)?255:0;
+                imgData.data[(i*2+j)*4+2]=(i*j==1)?255:0;
+                imgData.data[(i*2+j)*4+3]=255;
+            }
+        }
+        for(var jj=0;jj<canvasb.width;jj++){
+            for(var ii=0;ii<canvasb.height;ii++){
+                var p0=ii*canvasb.width+jj;
+                var p1=parseInt(ii*2/canvasb.width)*2+parseInt(jj*2/canvasb.height);
+                imgDatab.data[p0*4+0]=imgData.data[p1*4+0];
+                imgDatab.data[p0*4+1]=imgData.data[p1*4+1];
+                imgDatab.data[p0*4+2]=imgData.data[p1*4+2];
+                imgDatab.data[p0*4+3]=imgData.data[p1*4+3];
+            }
+        }
+        contextb.putImageData(imgDatab,0,0,0,0,canvasb.width,canvasb.height)
+    }
+</script>
+</html>
