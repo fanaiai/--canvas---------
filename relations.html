@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <style type="text/css">
+    body {
+        text-align: center;
+    }
+    
+    canvas {
+        margin: 0 auto;
+        border: 1px solid #ccc;
+        background: #336794;
+        cursor: -webkit-grabbing;
+        width:1000px;
+        height:800px;
+    }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+(function(window) {
+    var scale=1;
+    var offX=0;
+    var offY=0;
+    var opt = {
+        "style": {
+            "width": 1000,
+            "height": 800,
+            "level1r": 200*scale,
+            "level2r": 330*scale,
+            "circler": 50*scale,
+            "level0r": 50*scale,
+            "circle": {
+                "normal": "#c7a286",
+                "hover": "#ffcfc8"
+            },
+            "line": {
+                "normal": "rgba(255,255,255,.05)",
+                "hover": "#fff"
+            },
+            "linktext": {
+                "color": "#ffb972"
+            },
+            "nodetext":{
+                "fontsize":12
+            }
+        },
+        clickFun:function(ele){
+        }
+    };
+
+    function Relation(option) {
+        this.opt = $.extend(opt, option);
+        this.init();
+    }
+    Relation.prototype = {
+        init: function() {
+            this.canvas = document.getElementById("canvas");
+            this.context = canvas.getContext("2d");
+            this.canvas.width = opt.style.width;
+            this.canvas.height = opt.style.height;
+            this.formatNode();
+            this.formatLink();
+            this.draw();
+            this.addEvent();
+        },
+        formatNode: function() {
+            var that = this;
+            var level1 = 0;
+            var level2 = 0;
+            var targetcount = [];
+            for (var i = 0; i < opt.links.length; i++) {
+                if (targetcount.length > 0) {
+                    var contain = false;
+                    for (var t = 0; t < targetcount.length; t++) {
+                        if (opt.links[i].from == targetcount[t].from) {
+                            targetcount[t].index++;
+                            opt.links[i].index = targetcount[t].index;
+                            contain = true;
+                            break;
+                        }
+                    }
+                    if (!contain) {
+                        targetcount.push({
+                            "from": opt.links[i].from,
+                            "index": 0
+                        })
+                        opt.links[i].index = 0;
+                    }
+                } else {
+                    targetcount[0] = {
+                        "from": opt.links[i].from,
+                        "index": 0
+                    }
+                    opt.links[i].index = 0;
+                }
+                for (var j = 0; j < opt.nodes.length; j++) {
+                    if (opt.links[i].from == opt.nodes[j].id) {
+                        opt.nodes[j].target = (opt.nodes[j].target + 1) || 1;
+                    }
+                    if (opt.links[i].to == opt.nodes[j].id) {
+                        if (opt.nodes[j].index == undefined || opt.nodes[j].index < opt.links[i].index) {
+                            opt.nodes[j].index = opt.links[i].index;
+                            opt.nodes[j].from = opt.links[i].from;
+                        }
+                    }
+                }
+
+            }
+            for (var i = 0; i < targetcount.length; i++) {
+                for (var j = 0; j < opt.nodes.length; j++) {
+                    if (opt.nodes[j].from == targetcount[i].from) {
+                        opt.nodes[j].pcount = targetcount[i].index;
+                    }
+                }
+            }
+            for (var i = 0; i < opt.nodes.length; i++) {
+                if (opt.nodes[i].level == 1) {
+                    level1++;
+                } else if (opt.nodes[i].level == 2) {
+                    level2++;
+                }
+                for (var j = 0; j < opt.nodes.length; j++) {
+                    if (opt.nodes[j].from == opt.nodes[i].id) {
+                        opt.nodes[j].pindex = opt.nodes[i].index
+                    }
+                }
+            }
+            var level1angle = this.calcAngle(1, level1);
+            var level2angle = this.calcAngle(2, level2) * 0.7;
+            var lev1 = 0;
+            var lev2 = 0;
+            $.map(opt.nodes, function(ele, i) {
+                if(typeof ele.img=="string"){
+                var img = new Image();
+                img.src = ele.img;
+                ele.img = img;}
+                switch (ele.level) {
+                    case 0:
+                        ele.x = -opt.style.level0r / 2;
+                        ele.y = 0;
+                        ele.r = opt.style.level0r;
+                        break;
+                    case 1:
+                        ele.x = opt.style.level1r * Math.cos(ele.index * level1angle) - opt.style.circler / 2;
+                        ele.y = opt.style.level1r * Math.sin(ele.index * level1angle);
+                        ele.r = opt.style.level1r * level1angle * 0.8 / 2;
+                        break;
+                    case 2:
+                        ele.x = opt.style.level2r * (1 + 0.08 * ele.index) * Math.cos((ele.pindex * level1angle - (ele.pcount * level2angle) / 2) + (level2angle * ele.index)) - opt.style.circler / 2;
+                        ele.y = opt.style.level2r * (1 + 0.08 * ele.index) * Math.sin((ele.pindex * level1angle - (ele.pcount * level2angle) / 2) + (level2angle * ele.index));
+                        ele.r = opt.style.level2r * level2angle * 0.8 / 2;
+                        break;
+                    default:
+                        break;
+                }
+            })
+        },
+        formatLink: function() {
+            $.map(opt.links, function(ele, i) {
+                for (var i = 0; i < opt.nodes.length; i++) {
+                    if (ele.from == opt.nodes[i].id) {
+                        ele.source = {};
+                        ele.source = opt.nodes[i];
+                    }
+                    if (ele.to == opt.nodes[i].id) {
+                        ele.target = {};
+                        ele.target = opt.nodes[i];
+                    }
+                }
+            })
+        },
+        calcAngle: function(level, num) {
+            switch (level) {
+                case 1:
+                    return 2 * Math.PI / num;
+                    break;
+                case 2:
+                    return 2 * Math.PI / num;
+                    break;
+                default:
+                    break;
+            }
+        },
+        draw: function(x1, y1) {
+            var that = this;
+            var hoversource;
+            that.context.clearRect(0, 0, that.canvas.width, that.canvas.height);
+            that.context.save();
+            that.context.translate(that.canvas.width / 2+offX, that.canvas.height / 2+offY);
+            this.context.font='400 '+opt.style.nodetext.fontsize+'px/2 "微软雅黑", sans-serif';
+            $.each(opt.links, function(i, ele) {
+                that.context.beginPath();
+                if (that.inPosition(x1, y1, (ele.source.x + that.canvas.width / 2+offX)/1, (ele.source.y+offY + that.canvas.height / 2)/1, ele.source.r/1)) {
+                    hoversource = ele.source.id;
+                } else {
+                    that.context.strokeStyle = opt.style.line.normal;
+                    that.context.moveTo(ele.source.x, ele.source.y);
+                that.context.lineTo(ele.target.x, ele.target.y);
+                that.context.stroke();
+                that.context.closePath();
+                }
+                
+            })
+            $.each(opt.nodes, function(i, ele) {
+                if (ele.x != undefined && ele.y != undefined) {
+                    if (hoversource == ele.id) {
+                        that.normalImg(ele.x, ele.y, ele.img, ele.r, true, ele.name)
+
+                    } else {
+                        that.normalImg(ele.x, ele.y, ele.img, ele.r, false, ele.name)
+                    }
+                }
+            })
+            $.each(opt.links, function(i, ele) {
+                that.context.beginPath();
+                if (that.inPosition(x1, y1, (ele.source.x + that.canvas.width / 2+offX)/1, (ele.source.y+offY + that.canvas.height / 2)/1, ele.source.r/1)) {
+                    hoversource = ele.source.id;
+                    that.context.strokeStyle = opt.style.line.hover;
+                    that.context.fillStyle = opt.style.linktext.color;
+                    that.context.fillText(ele.name, ele.source.x + (ele.target.x - ele.source.x) / 2, ele.source.y + (ele.target.y - ele.source.y) / 2)
+                    that.context.moveTo(ele.source.x, ele.source.y);
+                    that.context.lineTo(ele.target.x, ele.target.y);
+                    that.context.stroke();
+                    that.context.closePath();
+                    that.normalImg(ele.source.x, ele.source.y, ele.source.img, ele.source.r, true, ele.source.name)
+                    that.normalImg(ele.target.x, ele.target.y, ele.target.img, ele.target.r, true, ele.target.name)
+                }
+                
+            })
+            that.context.restore();
+
+        },
+        addEvent: function() {
+            this.hoverEvent();
+            this.scrollEvent();
+            this.dragEvent();
+            this.clickEvent();
+        },
+        dragEvent:function(){
+            var that=this;
+            var down=false;
+            var start={};
+            this.canvas.onmousedown=function(event){
+                down=true;
+                start.x=event.clientX-offX;
+                start.y=event.clientY-offY;
+            }
+            this.canvas.onmousemove=function(event){
+                if(down){
+                    offX=event.clientX-start.x;
+                    offY=event.clientY-start.y;
+                    that.draw();
+                }
+            }
+            this.canvas.onmouseup=function(event){
+                down=false;
+            }
+        },
+        scrollEvent: function() {
+            var that = this;
+            document.addEventListener('DOMMouseScroll', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                if (e.wheelDelta) { //IE/Opera/Chrome 
+                    scale = scale + (e.wheelDelta > 0 ? 0.08 : -0.08);
+                } else if (e.detail) { //Firefox 
+                    scale = scale + (e.detail > 0 ? -0.08 : 0.08);
+                }
+                if (scale > 1.5) {
+                    scale = 1.5
+                } else if (scale < -1.5) {
+                    scale = -1.5
+                }
+                that.resizeCanvas();
+
+            }, false);
+            this.canvas.onmousewheel = function(e) {
+                that.scrollFunc(e);
+            }
+        },
+        scrollFunc: function(e) {
+            var that = this;
+            e.stopPropagation();
+            e.preventDefault();
+            if (e.wheelDelta) { //IE/Opera/Chrome 
+                scale = scale + (e.wheelDelta > 0 ? 0.08 : -0.08);
+            } else if (e.detail) { //Firefox 
+                scale = scale + (e.detail > 0 ? 0.08 : -0.08);
+            }
+            if (scale > 1.5) {
+                scale = 1.5
+            } else if (scale < -1.5) {
+                scale = -1.5
+            }
+            that.resizeCanvas();
+        },
+        resizeCanvas:function(){
+            this.opt.style=$.extend(this.opt.style,{"level1r": 200*scale,
+            "level2r": 330*scale,
+            "circler": 50*scale,
+            "level0r": 50*scale,"nodetext":{"fontsize":12*scale}})
+            this.formatNode();
+            this.draw();
+        },
+        hoverEvent: function() {
+            var that = this;
+            $(document).mousemove(function(event) {
+                var x = event.clientX - that.canvas.getBoundingClientRect().left;
+                var y = event.clientY - that.canvas.getBoundingClientRect().top;
+                that.draw(x, y);
+            })
+        },
+        clickEvent:function(){
+            var that = this;
+            $(document).click(function(event) {
+                var x = event.clientX - that.canvas.getBoundingClientRect().left;
+                var y = event.clientY - that.canvas.getBoundingClientRect().top;
+                $.each(opt.nodes, function(i, ele) {
+                if (that.inPosition(x, y, (ele.x + that.canvas.width / 2+offX)/1, (ele.y+offY + that.canvas.height / 2)/1, ele.r/1)) {
+                    opt.clickFun(ele);
+                }})
+            })
+        },
+        inPosition: function(x, y, x0, y0, r) {
+            if (x >= x0 - r && x <= x0 + r && y >= y0 - r && y <= y0 + r) {
+                return true;
+            } else {
+                return false;
+            }
+        },
+        normalImg: function(x, y, img, r, on, text) {
+
+            this.context.save();
+            this.context.strokeStyle = opt.style.circle.normal;
+            this.context.fillStyle = "#f9f9f9";
+            this.context.lineWidth = 1;
+            this.context.beginPath();
+            if (on) {
+                this.context.strokeStyle = opt.style.circle.hover;
+                this.context.lineWidth = 3;
+            }
+            this.context.arc(x, y, r + 3, 0, 2 * Math.PI);
+            this.context.stroke();
+            this.context.fill();
+            this.context.closePath();
+            this.context.beginPath();
+            this.context.arc(x, y, r, 0, 2 * Math.PI);
+            this.context.clip();
+            this.context.fillStyle = "rgba(0,0,0,.6)"
+            this.context.drawImage(img, 0, 0, img.width, img.height, x - r, y - r, r * 2, r * 2);
+            this.context.fillRect(x - r, y + r*0.4, r * 2, r)
+            this.context.fillStyle = "#fff";
+            
+            this.context.textBaseline="top"
+            // this.context.font = 'italic 400 12px/2 Unknown Font, sans-serif';
+            var len = this.context.measureText(text).width;
+            // this.context.fillText(text,x-len/2,y+2*r-10);
+            this.context.fillText(text, x - len / 2, y+r*0.5);
+            this.context.closePath();
+            this.context.restore();
+        }
+
+    }
+    window.Relation = Relation;
+})(window);
+var option = {"nodes":[{"id":"2514380","name":"陈乔恩","img":"http://img01.sogoucdn.com/app/a/10010016/97764e7de6e812e1a7eb02adb886035f","intro":"陈乔恩，台湾女演员，有“偶像剧女王”的封号。其中饰演女主角的两部偶像剧，先后成为台湾最高收视率的偶像剧，分别是《王子变青蛙》、《命中注定我爱你》，更是凭《命中注定我爱你》首次入围金钟奖戏剧节目女主角奖。2013年2月6日《笑傲江湖》于湖南卫视首播，饰演东方不败一角，首次挑战武侠经典角色。陈乔恩演绎的东方不败造型惊艳，亦刚亦柔，时而纯真，时而阴险，成功实现口碑大逆转，演技受到观众与媒体肯定，被媒体誉为“最妩媚版东方不败”。同时也刷新Vlinkage新媒体指数发布以来单日最高分。","w":17.0,"baike":"http://baike.sogou.com/v35251.htm","level":0},{"id":"842304","name":"邱泽","img":"http://img03.sogoucdn.com/app/a/10010016/26fa70ea747d7376905a9500d010ea43","w":3.0,"baike":"http://baike.sogou.com/v120868.htm","level":1},{"id":"2439449","name":"杨丞琳","img":"http://img02.sogoucdn.com/app/a/10010016/52b08d6040834535d058ad038f460f80","w":3.0,"baike":"http://baike.sogou.com/v68940.htm","level":2},{"id":"3673385","name":"唐嫣","img":"http://img01.sogoucdn.com/app/a/10010016/b53e6293d978208aef3f08bd07000080","w":3.0,"baike":"http://baike.sogou.com/v620115.htm","level":2},{"id":"536417","name":"李毓芬","img":"http://img04.sogoucdn.com/app/a/10010016/da6a8f65341abd744c54a9042b8e06f6","w":3.0,"baike":"http://baike.sogou.com/v4499390.htm","level":2},{"id":"355537","name":"霍建华","img":"http://img02.sogoucdn.com/app/a/10010016/ba65225fe064c1847700077a127af138","w":3.0,"baike":"http://baike.sogou.com/v457791.htm","level":1},{"id":"123724","name":"林心如","img":"http://img03.sogoucdn.com/app/a/10010016/049c16a0ea624c8d7319292e76c8ecdd","w":3.0,"baike":"http://baike.sogou.com/v93715.htm","level":2},{"id":"543456","name":"关之琳","img":"http://img02.sogoucdn.com/app/a/10010016/76ffefa7d4c3e620736328d3d0bd575a","w":3.0,"baike":"http://baike.sogou.com/v150835.htm","level":2},{"id":"1164327","name":"叶璇","img":"http://img04.sogoucdn.com/app/a/10010016/b2bb9e04bb5731ea79aace4a79052717","w":3.0,"baike":"http://baike.sogou.com/v208109.htm","level":2},{"id":"668982","name":"古天乐","img":"http://img04.sogoucdn.com/app/a/10010016/42ed27d64ac483b1ab365c59a37d5537","w":3.0,"baike":"http://baike.sogou.com/v94062.htm","level":1},{"id":"2076359","name":"黄纪莹","img":"http://img02.sogoucdn.com/app/a/10010016/5fa827d9ef3153ba575517736886a196","w":3.0,"baike":"http://baike.sogou.com/v450278.htm","level":2},{"id":"2527935","name":"郑秀文","img":"http://img01.sogoucdn.com/app/a/10010016/a480b149138c70445728f0c5b3ac3353","w":3.0,"baike":"http://baike.sogou.com/v106427.htm","level":2},{"id":"2335246","name":"杨千嬅","img":"http://img01.sogoucdn.com/app/a/10010016/aa2a5b314dda977e8f2d3f258213c850","w":3.0,"baike":"http://baike.sogou.com/v42573.htm","level":2},{"id":"1493865","name":"乔任梁","img":"http://img04.sogoucdn.com/app/a/10010016/f139c1e43165dd4299a0d7833d7eadb8","w":1.0,"baike":"","level":1},{"id":"1560824","name":"徐璐","img":"http://img04.sogoucdn.com/app/a/100520063/981c32b50a1ee25e0dea42477ef2be8c","w":1.0,"baike":"http://baike.sogou.com/v6380555.htm","level":2},{"id":"2649198","name":"许薇","img":"http://img02.sogoucdn.com/app/a/100520063/d449242bf3b5c865d062bdac0f851208","intro":"代表作品为《男得有爱》。","w":1.0,"baike":"http://baike.sogou.com/v37863898.htm","level":2},{"id":"2641132","name":"井柏然","img":"http://img02.sogoucdn.com/app/a/10010016/291ae556443ea5919e702e7207d4617e","w":1.0,"baike":"http://baike.sogou.com/v690025.htm","level":2},{"id":"3069801","name":"安以轩","img":"http://img02.sogoucdn.com/app/a/10010016/6516221302c16fe5b80dfc266f76c92b","w":2.0,"baike":"http://baike.sogou.com/v97922.htm","level":1},{"id":"6756090","name":"李承炫","img":"http://img01.sogoucdn.com/app/a/10010016/3a2de2618ca5b4fd45d004eaebedce42","w":2.0,"baike":"","level":2},{"id":"2289901","name":"汪小菲","img":"http://img04.sogoucdn.com/app/a/10010016/d2f31277c84d3f120b127ec62f1724c8","w":2.0,"baike":"http://baike.sogou.com/v5079684.htm","level":2},{"id":"3744342","name":"王中磊","img":"http://img02.sogoucdn.com/app/a/10010016/d5f08f6d706bafd3ce4a9635c1098041","w":2.0,"baike":"http://baike.sogou.com/v6672535.htm","level":2},{"id":"92514","name":"阮经天","img":"http://img02.sogoucdn.com/app/a/10010016/a68da5e5fa09713196e4764b27572bd5","w":3.0,"baike":"http://baike.sogou.com/v80360.htm","level":1},{"id":"1580398","name":"许玮宁","img":"http://img03.sogoucdn.com/app/a/10010016/cbf047912047d31e7063a24c0809e0be","w":3.0,"baike":"http://baike.sogou.com/v185469.htm","level":2},{"id":"19055032","name":"刘品言","img":"http://img01.sogoucdn.com/app/a/10010016/044546ffda541f764438c908bb2897d5","w":3.0,"baike":"http://baike.sogou.com/v584953.htm","level":2},{"id":"807780","name":"黄晓明","img":"http://img01.sogoucdn.com/app/a/10010016/2329e70208f431431aa80ebeb5dd03fd","w":3.0,"baike":"http://baike.sogou.com/v69454.htm","level":2},{"id":"2580594","name":"陈铭章","img":"http://img01.sogoucdn.com/app/a/10010016/7cb9a0f2d8e71aad50a6b6f7dea0ddff","intro":"陈铭章(1973年6月12日－)，中国台湾人，著名导演。毕业于台湾世新大学视觉传播系。他以话剧导演的身份跨足电视界，拍摄的电视剧屡次取得年度收视冠军、打破收视记录，且大多为经典之作，其导演的《命中注定我爱你》不仅是台湾偶像剧最高收视纪录保持者还是首部获得“金钟奖”最佳剧集的偶像剧，被誉为“台湾偶像剧金牌导演”。代表作品有《MVP情人》《爱情魔法师》《王子变青蛙》《放羊的星星》《命中注定我爱你》《杜拉拉升职记》《单身公主相亲记》《面包树上的女人》《遇见王沥川》等。","w":1.0,"baike":"http://baike.sogou.com/v557794.htm","level":1},{"id":"3811346","name":"明道","img":"http://img02.sogoucdn.com/app/a/10010016/3041399ddfb87ad452309319df112973","w":2.0,"baike":"http://baike.sogou.com/v332759.htm","level":1},{"id":"2294559","name":"孙俪","img":"http://img02.sogoucdn.com/app/a/10010016/dee216562a89be97720666d7468bf5f1","w":2.0,"baike":"http://baike.sogou.com/v66160.htm","level":2},{"id":"820026","name":"杨谨华","img":"http://img01.sogoucdn.com/app/a/10010016/7287e897c088090856f314ddd7058b06","w":2.0,"baike":"http://baike.sogou.com/v366697.htm","level":2},{"id":"1747972","name":"王少伟","img":"http://img04.sogoucdn.com/app/a/10010016/6d2f94c9c7d01a8873de2da45aa9fc69","w":2.0,"baike":"http://baike.sogou.com/v4652609.htm","level":2},{"id":"6751126","name":"张翰","img":"http://img02.sogoucdn.com/app/a/10010016/e728d2a3089e018fc154ea712fa705e3","w":1.0,"baike":"http://baike.sogou.com/v4391051.htm","level":1},{"id":"2736842","name":"古力娜扎","img":"http://img04.sogoucdn.com/app/a/10010016/fc7ae7f8a45b33ce0e8c05e434d92356","w":1.0,"baike":"http://baike.sogou.com/v22821125.htm","level":2},{"id":"4030207","name":"郑爽","img":"http://img02.sogoucdn.com/app/a/10010016/912e71b57259e8e1df8e2687b10660e1","w":1.0,"baike":"http://baike.sogou.com/v574672.htm","level":2},{"id":"2985665","name":"李菲儿","img":"http://img04.sogoucdn.com/app/a/10010016/0fcf4e229ec35183e0d90d4320e5ba3b","w":1.0,"baike":"http://baike.sogou.com/v231290.htm","level":2},{"id":"1630833","name":"郑元畅","img":"http://img02.sogoucdn.com/app/a/10010016/9ccda00ce0ebdb221bb65feaeb5b8b77","w":3.0,"baike":"http://baike.sogou.com/v78649.htm","level":1},{"id":"2636106","name":"陈妍希","img":"http://img03.sogoucdn.com/app/a/10010016/15eef1922d86cf3de994e6b39f8ab778","w":3.0,"baike":"http://baike.sogou.com/v5020031.htm","level":2},{"id":"2149735","name":"王心凌","img":"http://img02.sogoucdn.com/app/a/10010016/33450f769ec2509134f73059f1e5f3d8","w":3.0,"baike":"http://baike.sogou.com/v77226.htm","level":2},{"id":"1232112","name":"苏见信","img":"http://img01.sogoucdn.com/app/a/10010016/bb5e2943d5aa03a9f23db765225548e6","w":3.0,"baike":"http://baike.sogou.com/v75969.htm","level":2},{"id":"2040170","name":"夏于乔","img":"http://img03.sogoucdn.com/app/a/10010016/2d0d358ae2583ee85c88eb2664adbc82","intro":"夏于乔，1984年8月24日出生于中国山东，中国台湾女艺人，，中国文化大学国乐系毕业。2000年因参加中视《我猜我猜我猜猜猜》节目《第一届梦幻国中美少女》获得第一名进入娱乐圈；2001年出演首部电视剧《开不了口》；2003年主演神话剧《倩女幽魂》受到关注；2004年主演偶像剧《爱情魔戒》；2011年凭借主持节目《型男大主厨》获得第四十六届台湾电视“金钟奖”综合节目主持人奖；2013年主演的电影《总铺师》连续四周票房居中国台湾第一名；同年在电视剧《妈，亲一下》中担任女一号。","w":1.0,"baike":"http://baike.sogou.com/v263447.htm","level":1},{"id":"2354630","name":"白歆惠","img":"http://img02.sogoucdn.com/app/a/10010016/37d8b2796d6fc5be686e47e3e2209268","w":5.0,"baike":"http://baike.sogou.com/v174278.htm","level":1},{"id":"3345513","name":"毛加恩","img":"http://img01.sogoucdn.com/app/a/10010016/00e2c0e9d5b886ba93d47f3c30f75427","intro":"毛加恩是台湾台啤篮球队队员。曾饰演《十八禁不禁》的汪少威，是台湾名模白歆惠的男友。","w":5.0,"baike":"http://baike.sogou.com/v11042589.htm","level":2},{"id":"2602854","name":"蓝正龙","img":"http://img04.sogoucdn.com/app/a/10010016/ae91e56d8e48fb2d8ef14bb83f92806d","w":5.0,"baike":"http://baike.sogou.com/v198489.htm","level":2},{"id":"1433020","name":"隋棠","img":"http://img04.sogoucdn.com/app/a/10010016/f8097871c0b8255ed05e9b9ebca2dacf","w":5.0,"baike":"http://baike.sogou.com/v174177.htm","level":2},{"id":"338619","name":"纪亚文","img":"http://img02.sogoucdn.com/app/a/10010016/c0f856be44cd16d392b221fe9ee26945","w":1.0,"baike":"http://baike.sogou.com/v7719345.htm","level":1},{"id":"3890127","name":"林熙蕾","img":"http://img02.sogoucdn.com/app/a/10010016/64f426e524968cb2cbd90fcd5c5fd62e","w":1.0,"baike":"http://baike.sogou.com/v111293.htm","level":2},{"id":"1791336","name":"吴淡如","img":"http://img03.sogoucdn.com/app/a/10010016/8f40923892a104ef9323005357629ca6","intro":"吴淡如，电视台、电台节目主持人、作家，主持的电视节目《天天星斯八》为同时段收视率榜首。如今已出书五十多种，大都是畅销佳作，如《真爱非常顽强》两年内连续重印四十九次之多；《牯岭街少年杀人事件》由台湾著名导演杨德昌拍成电影享誉台湾及世界影坛。她本人已连续5年获金石堂最佳畅销女作家第一名，被誉为“台湾畅销书天后”。","w":1.0,"baike":"http://baike.sogou.com/v1216999.htm","level":2},{"id":"1990547","name":"吴映洁","img":"http://img01.sogoucdn.com/app/a/10010016/439b87acf5d2a3b1d350fb7c99fd9879","w":1.0,"baike":"http://baike.sogou.com/v435702.htm","level":2},{"id":"2541247","name":"黄小柔","img":"http://img03.sogoucdn.com/app/a/10010016/fb0e058b3f7d52892ee2a5f5c37cba62","w":1.0,"baike":"http://baike.sogou.com/v111120.htm","level":1},{"id":"2094498","name":"junior","img":"http://img02.sogoucdn.com/app/a/10010016/f71f593cc5596f1deecf1930380cfe58","intro":"韩宜邦，1981年2月25日出生，台湾演员、主持人、歌手，毕业于中华大学营建工程学系。曾组成歌唱组合丸子(另两位团员为小鬼及绿茶)。","w":1.0,"baike":"http://baike.sogou.com/v4531969.htm","level":2},{"id":"3932460","name":"蓝心湄","img":"http://img02.sogoucdn.com/app/a/10010016/b9e1625fb46bcc4141be0a0f73de9daa","w":1.0,"baike":"http://baike.sogou.com/v120804.htm","level":2},{"id":"1534095","name":"蔡君茹","img":"http://img04.sogoucdn.com/app/a/10010016/5f7be27bc0df2f9adb4904b1be6e324e","w":1.0,"baike":"http://baike.sogou.com/v65002174.htm","level":2},{"id":"2370885","name":"陈正飞","img":"http://img02.sogoucdn.com/app/a/10010016/b1490019f7c42176066337e6ad021e65","intro":"陈正飞(Andy Chen)，影视歌多栖艺人。出生于宝岛台湾，在国中二年级时跟随父母定居美国圣地亚哥，后移民加拿大温哥华。自2002年加入MTV台湾VJ选拔赛中脱颖而出，自此成为了MTV的当家主持。外形俊朗的阳光大男生曾主持湖南卫视《8090》、东方卫视《国际音乐榜》CCTV MTV《音乐盛典颁奖典礼》等众多国内大型节目主持人。另外，他阳光帅气的外形、纯正流利的外语使他成为了国内各时尚活动宠儿并有着主持界“双语王子”的称号。","w":1.0,"baike":"http://baike.sogou.com/v7032917.htm","level":1}],"links":[{"from":"2514380","to":"842304","name":"绯闻","type":0},{"from":"2514380","to":"355537","name":"旧爱","type":0},{"from":"2514380","to":"668982","name":"前男友","type":0},{"from":"2514380","to":"1493865","name":"好友","type":2},{"from":"2514380","to":"3069801","name":"好友","type":2},{"from":"2514380","to":"92514","name":"好友","type":2},{"from":"2514380","to":"2580594","name":"搭档","type":2},{"from":"2514380","to":"3811346","name":"好友","type":2},{"from":"2514380","to":"6751126","name":"好友","type":2},{"from":"2514380","to":"1630833","name":"朋友","type":2},{"from":"2514380","to":"2040170","name":"好友","type":2},{"from":"2514380","to":"2354630","name":"好友","type":2},{"from":"2514380","to":"338619","name":"合作","type":2},{"from":"2514380","to":"2541247","name":"好友","type":2},{"from":"2514380","to":"2370885","name":"好友","type":2},{"from":"842304","to":"2514380","name":"绯闻女友","type":0},{"from":"355537","to":"2514380","name":"前女友","type":0},{"from":"668982","to":"2514380","name":"前女友","type":0},{"from":"1493865","to":"2514380","name":"好友","type":2},{"from":"3069801","to":"2514380","name":"好友","type":2},{"from":"3069801","to":"2354630","name":"好友","type":2},{"from":"92514","to":"2514380","name":"好友","type":2},{"from":"92514","to":"1630833","name":"好友","type":2},{"from":"92514","to":"2354630","name":"好友","type":2},{"from":"2580594","to":"2514380","name":"搭档","type":2},{"from":"3811346","to":"2514380","name":"好友","type":2},{"from":"3811346","to":"2354630","name":"搭档","type":2},{"from":"6751126","to":"2514380","name":"好友","type":2},{"from":"1630833","to":"92514","name":"好友","type":2},{"from":"1630833","to":"2514380","name":"朋友","type":2},{"from":"1630833","to":"2354630","name":"好友","type":2},{"from":"2040170","to":"2514380","name":"好友","type":2},{"from":"2354630","to":"92514","name":"好友","type":2},{"from":"2354630","to":"2514380","name":"好友","type":2},{"from":"2354630","to":"3811346","name":"搭档","type":2},{"from":"2354630","to":"1630833","name":"好友","type":2},{"from":"2354630","to":"3069801","name":"好友","type":2},{"from":"338619","to":"2514380","name":"合作","type":2},{"from":"2541247","to":"2514380","name":"好友","type":2},{"from":"2370885","to":"2514380","name":"好友","type":2},{"from":"3673385","to":"842304","name":"前男友","type":0},{"from":"842304","to":"3673385","name":"前女友","type":0},{"from":"3673385","to":"1493865","name":"老乡","type":2},{"from":"19055032","to":"92514","name":"前男友","type":0},{"from":"92514","to":"19055032","name":"前女友","type":0},{"from":"3744342","to":"3069801","name":"绯闻女友","type":0},{"from":"3069801","to":"3744342","name":"绯闻","type":0},{"from":"807780","to":"92514","name":"朋友","type":2},{"from":"92514","to":"807780","name":"朋友","type":2},{"from":"1164327","to":"355537","name":"绯闻","type":0},{"from":"355537","to":"1164327","name":"绯闻","type":0},{"from":"1580398","to":"3069801","name":"好友","type":2},{"from":"3069801","to":"1580398","name":"好友","type":2},{"from":"1580398","to":"92514","name":"男友","type":0},{"from":"92514","to":"1580398","name":"女友","type":0},{"from":"2094498","to":"2541247","name":"前女友","type":0},{"from":"2541247","to":"2094498","name":"旧爱","type":0},{"from":"2335246","to":"668982","name":"好友","type":2},{"from":"668982","to":"2335246","name":"好友","type":2},{"from":"2985665","to":"6751126","name":"绯闻","type":0},{"from":"6751126","to":"2985665","name":"绯闻","type":0},{"from":"123724","to":"355537","name":"丈夫","type":0},{"from":"355537","to":"123724","name":"妻子","type":0},{"from":"4030207","to":"6751126","name":"前男友","type":0},{"from":"6751126","to":"4030207","name":"前女友","type":0},{"from":"536417","to":"842304","name":"绯闻","type":0},{"from":"842304","to":"536417","name":"绯闻","type":0},{"from":"2649198","to":"1493865","name":"绯闻","type":0},{"from":"1493865","to":"2649198","name":"绯闻","type":0},{"from":"3345513","to":"2354630","name":"前女友","type":0},{"from":"2354630","to":"3345513","name":"前男友","type":0},{"from":"1747972","to":"3811346","name":"队友","type":2},{"from":"3811346","to":"1747972","name":"队友","type":2},{"from":"2289901","to":"3069801","name":"绯闻女友","type":0},{"from":"3069801","to":"2289901","name":"绯闻","type":0},{"from":"820026","to":"3811346","name":"好友","type":2},{"from":"3811346","to":"820026","name":"好友","type":2},{"from":"1433020","to":"2354630","name":"搭档","type":2},{"from":"2354630","to":"1433020","name":"搭档","type":2},{"from":"2439449","to":"842304","name":"前男友","type":0},{"from":"842304","to":"2439449","name":"前女友","type":0},{"from":"543456","to":"355537","name":"绯闻","type":0},{"from":"355537","to":"543456","name":"绯闻","type":0},{"from":"3932460","to":"2541247","name":"干女儿","type":1},{"from":"2541247","to":"3932460","name":"干妈","type":1},{"from":"3890127","to":"338619","name":"合作","type":2},{"from":"338619","to":"3890127","name":"合作","type":2},{"from":"2076359","to":"668982","name":"前男友","type":0},{"from":"668982","to":"2076359","name":"前女友","type":0},{"from":"6756090","to":"3069801","name":"前女友","type":0},{"from":"3069801","to":"6756090","name":"旧爱","type":0},{"from":"2149735","to":"1630833","name":"好友","type":2},{"from":"1630833","to":"2149735","name":"好友","type":2},{"from":"1560824","to":"1493865","name":"绯闻男友","type":0},{"from":"1493865","to":"1560824","name":"绯闻女友","type":0},{"from":"2294559","to":"3811346","name":"搭档","type":2},{"from":"3811346","to":"2294559","name":"搭档","type":2},{"from":"1990547","to":"338619","name":"好友","type":2},{"from":"338619","to":"1990547","name":"好友","type":2},{"from":"2527935","to":"668982","name":"搭档","type":2},{"from":"668982","to":"2527935","name":"搭档","type":2},{"from":"2636106","to":"668982","name":"前绯闻男友","type":0},{"from":"2636106","to":"1630833","name":"绯闻","type":0},{"from":"1630833","to":"2636106","name":"绯闻","type":0},{"from":"1534095","to":"2541247","name":"密友","type":2},{"from":"2541247","to":"1534095","name":"密友","type":2},{"from":"2602854","to":"2354630","name":"搭档","type":2},{"from":"2354630","to":"2602854","name":"搭档","type":2},{"from":"1232112","to":"1630833","name":"好友","type":2},{"from":"1630833","to":"1232112","name":"好友","type":2},{"from":"1791336","to":"338619","name":"合作","type":2},{"from":"338619","to":"1791336","name":"合作","type":2},{"from":"2641132","to":"1493865","name":"好友","type":2},{"from":"1493865","to":"2641132","name":"好友","type":2},{"from":"2736842","to":"6751126","name":"男友","type":0},{"from":"6751126","to":"2736842","name":"女友","type":0}],"recommenders":[{"id":"2526306","name":"李敏镐","img":"http://img01.sogoucdn.com/app/a/10010016/b15278e3d3728be893ae80be286a9b46"},{"id":"2439449","name":"杨丞琳","img":"http://img02.sogoucdn.com/app/a/10010016/52b08d6040834535d058ad038f460f80"},{"id":"3566145","name":"董卿","img":"http://img03.sogoucdn.com/app/a/10010016/67590d22e1f7b17df54d9ed7615110c5"},{"id":"2442208","name":"郑伊健","img":"http://img02.sogoucdn.com/app/a/10010016/87bac64cda1f923d2efe05a9e93281cf"},{"id":"2807937","name":"邓家佳","img":"http://img03.sogoucdn.com/app/a/10010016/23e2402d5e300fb19d111bcceb9779a7"},{"id":"2514380","name":"陈乔恩","img":"http://img01.sogoucdn.com/app/a/10010016/97764e7de6e812e1a7eb02adb886035f"},{"id":"1075412","name":"张钧甯","img":"http://img03.sogoucdn.com/app/a/10010016/866a422512a91e6206b236f5ebfc91fd"},{"id":"432415","name":"陈晓","img":"http://img01.sogoucdn.com/app/a/10010016/7e725daabb2734645ebe2f5d9d17555"},{"id":"2334484","name":"李宇春","img":"http://img03.sogoucdn.com/app/a/10010016/e19e4751d835bf10ca8b1ce9ac848d11"},{"id":"668982","name":"古天乐","img":"http://img04.sogoucdn.com/app/a/10010016/42ed27d64ac483b1ab365c59a37d5537"},{"id":"2785343","name":"李湘","img":"http://img01.sogoucdn.com/app/a/10010016/09e60901105b35a0d111fb41400ff7cb"},{"id":"681869","name":"宇智波佐助","img":"http://img03.sogoucdn.com/app/a/10010016/d039c05ddbad6c967292fc779b7f0d14"},{"id":"1618230","name":"贾乃亮","img":"http://img04.sogoucdn.com/app/a/10010016/30d1ccfb72ed3aab4cb83520d829ffd6"},{"id":"2550753","name":"霍思燕","img":"http://img02.sogoucdn.com/app/a/10010016/64dedf3dc5900ac3081834e8143f3388"},{"id":"2185781","name":"黄圣依","img":"http://img01.sogoucdn.com/app/a/10010016/0300e9c63b50e560e7d504b1cb695b8a"},{"id":"1183593","name":"徐峥","img":"http://img02.sogoucdn.com/app/a/10010016/caa41baba9f8e3bfd2ea91ab5f338ebf"},{"id":"1424428","name":"张国荣","img":"http://img02.sogoucdn.com/app/a/10010016/11b7774f32d76b53f9881d476ac2683e"},{"id":"3530143","name":"释小龙","img":"http://img01.sogoucdn.com/app/a/10010016/67703717d5e364ae6ede53fd3a9c6f7c"},{"id":"3054382","name":"李沁","img":"http://img03.sogoucdn.com/app/a/10010016/30c0755d34194233372e4aabaaad9e68"},{"id":"1892100","name":"陈冠希","img":"http://img01.sogoucdn.com/app/a/10010016/abb1e5968c5db5711cdfa2dd3fd63fe1"},{"id":"2155202","name":"汤唯","img":"http://img03.sogoucdn.com/app/a/10010016/1961d7ac03b5ab052176f0783c8e817c"},{"id":"2910480","name":"欧弟","img":"http://img04.sogoucdn.com/app/a/10010016/daad15d4a0119f47624735310ef79f09"},{"id":"2687987","name":"陈小春","img":"http://img04.sogoucdn.com/app/a/10010016/3e435539ba304b37132c95b57a0849f2"},{"id":"393029","name":"秦海璐","img":"http://img01.sogoucdn.com/app/a/10010016/3111764056691c109880d09ac4e8caa6"},{"id":"2634220","name":"犬夜叉","img":"http://img01.sogoucdn.com/app/a/100520063/38df12454044c04395b67270fa78a56f"},{"id":"2959215","name":"钟汉良","img":"http://img01.sogoucdn.com/app/a/10010016/5ced3d1562171d14ef26e4eada665dee"},{"id":"3765855","name":"陈法拉","img":"http://img04.sogoucdn.com/app/a/10010016/2e3d8c1bf30f4754d2cd2cac76318b7c"},{"id":"1300842","name":"朱德","img":"http://img02.sogoucdn.com/app/a/10010016/ee29dda7737a063d1de959134b0091a7"},{"id":"1823247","name":"李丽珍","img":"http://img01.sogoucdn.com/app/a/10010016/e1e9a02295f45376fbf2c288aebd8496"},{"id":"2999848","name":"马伊琍","img":"http://img04.sogoucdn.com/app/a/10010016/3f52689ac24855ccb8df5ca4476b537d"},{"id":"154075","name":"李嘉诚","img":"http://img03.sogoucdn.com/app/a/10010016/f725e8b871fedebc9166bba89f90e076"},{"id":"470851","name":"袁姗姗","img":"http://img04.sogoucdn.com/app/a/10010016/ce59883797581ea2b49b2c90952ba26b"},{"id":"188728","name":"宋慧乔","img":"http://img04.sogoucdn.com/app/a/10010016/07cb225739fe3687c5772c28501db0d2"},{"id":"803402","name":"林允儿","img":"http://img03.sogoucdn.com/app/a/10010016/c3e0f9293e95ae78dfd15c4cf1587223"},{"id":"903923","name":"吴奇隆","img":"http://img04.sogoucdn.com/app/a/10010016/260e48d7ca1a47c9f4fc5e626bcf0a37"},{"id":"363830","name":"秋瓷炫","img":"http://img03.sogoucdn.com/app/a/10010016/02f8474d1ca7eb901f47ca8028b831c9"},{"id":"3685056","name":"郭德纲","img":"http://img02.sogoucdn.com/app/a/10010016/960c6cb43ffe7ccaf034e24bdc1645d8"},{"id":"3545003","name":"海陆","img":"http://img02.sogoucdn.com/app/a/10010016/4982f556a46c75e5250f76bd808b5d82"},{"id":"2033113","name":"李玉刚","img":"http://img03.sogoucdn.com/app/a/10010016/b1f4e9575711fb208cd7e040c17c25f0"},{"id":"3196033","name":"文章","img":"http://img01.sogoucdn.com/app/a/10010016/55e505bd980282e8d55e43c1a4e00a4b"},{"id":"2572149","name":"金贤重","img":"http://img02.sogoucdn.com/app/a/10010016/3cd2c664b157dca661236fd8358e5fd2"},{"id":"130628","name":"汪东城","img":"http://img04.sogoucdn.com/app/a/10010016/297f65864b7249573ff6fb94ab5ae9ef"},{"id":"3208063","name":"赵文卓","img":"http://img03.sogoucdn.com/app/a/10010016/c4334677c8ab5fd73014b15db31c3d94"},{"id":"2968287","name":"刘恺威","img":"http://img03.sogoucdn.com/app/a/10010016/07ec825da95208a840c2f55d504edbc8"},{"id":"623713","name":"邓丽君","img":"http://img02.sogoucdn.com/app/a/10010016/81373fcac723d357020a024bc0e48fd8"},{"id":"1495404","name":"黄家驹","img":"http://img02.sogoucdn.com/app/a/10010016/36502e5decd8b2731477c7f78bd697cd"},{"id":"2044024","name":"戚薇","img":"http://img02.sogoucdn.com/app/a/10010016/f783f25bfa03fc3006e6b6eac71d776a"},{"id":"282647","name":"车晓","img":"http://img01.sogoucdn.com/app/a/10010016/1998f73e20e2eb0f8f78af0ee1da16d4"},{"id":"1548530","name":"邱淑贞","img":"http://img02.sogoucdn.com/app/a/10010016/b6d3ff66f43ad20825de9d30d921fe50"},{"id":"834610","name":"王丽坤","img":"http://img01.sogoucdn.com/app/a/10010016/d1e2bd15b8c37bec1b6005ca9782a561"}]};
+    option.clickFun=function(ele){
+            console.log(ele.name)
+        }
+var relation = new Relation(option);
+</script>
+
+</html>
